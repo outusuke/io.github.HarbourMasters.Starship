@@ -12,26 +12,95 @@ finish-args:
   - --device=all        # gamepads
   - --share=network     # controller DB fetch
   - --filesystem=xdg-documents:ro   # to pick your SF64 ROM
+# Placeholders written between at-signs are filled in by prepare.sh (run it before building)
 modules:
+  - name: libzip
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DBUILD_TOOLS=OFF
+      - -DBUILD_REGRESS=OFF
+      - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_DOC=OFF
+      - -DENABLE_BZIP2=OFF
+      - -DENABLE_LZMA=OFF
+      - -DENABLE_ZSTD=OFF
+      - -DENABLE_OPENSSL=OFF
+      - -DENABLE_GNUTLS=OFF
+      - -DENABLE_MBEDTLS=OFF
+    sources:
+      - type: archive
+        url: '@LIBZIP_URL@'
+        sha256: '@LIBZIP_SHA@'
+
+  - name: tinyxml2
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -Dtinyxml2_BUILD_TESTING=OFF
+    sources:
+      - type: archive
+        url: '@TINYXML2_URL@'
+        sha256: '@TINYXML2_SHA@'
+
+  - name: spdlog
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DSPDLOG_BUILD_EXAMPLE=OFF
+      - -DSPDLOG_BUILD_TESTS=OFF
+    sources:
+      - type: archive
+        url: '@SPDLOG_URL@'
+        sha256: '@SPDLOG_SHA@'
+
+  - name: nlohmann-json
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DJSON_BuildTests=OFF
+    sources:
+      - type: archive
+        url: '@JSON_URL@'
+        sha256: '@JSON_SHA@'
+
+  - name: SDL2_net
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DSDL2NET_SAMPLES=OFF
+    sources:
+      - type: archive
+        url: '@SDLNET_URL@'
+        sha256: '@SDLNET_SHA@'
+
+  - name: glew
+    buildsystem: cmake-ninja
+    subdir: build/cmake
+    config-opts:
+      - -DBUILD_UTILS=OFF
+    sources:
+      - type: archive
+        url: '@GLEW_URL@'
+        sha256: '@GLEW_SHA@'
+
   - name: starship
     buildsystem: simple
     build-options:
       build-args:
-        - --share=network   # CMake FetchContent (imgui, stb, dr_libs, ...) needs network
+        - --share=network   # CMake FetchContent (imgui, stb, dr_libs, StormLib, ...) needs network
     build-commands:
-      - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app -DCMAKE_PREFIX_PATH=/app -DBUILD_SHARED_LIBS=OFF
       - cmake --build build --target GeneratePortO2R
       - cmake --build build -j"$FLATPAK_BUILDER_N_JOBS"
       - install -Dm755 "$(find build -maxdepth 2 -type f -iname starship -perm -u+x | head -n1)" /app/starship/Starship
       - find build -maxdepth 2 -name '*.o2r' -exec install -Dm644 -t /app/starship {} +
       - install -Dm644 config.yml /app/starship/config.yml
-      - cp -r yamls /app/starship/yamls
-      - cp -r assets /app/starship/assets
+      - install -d /app/starship/assets && cp -r assets/yaml /app/starship/assets/
       - install -Dm644 gamecontrollerdb.txt /app/starship/gamecontrollerdb.txt
       - install -Dm755 starship.sh /app/bin/starship.sh
       - install -Dm644 io.github.HarbourMasters.Starship.desktop /app/share/applications/io.github.HarbourMasters.Starship.desktop
       - install -Dm644 logo.png /app/share/icons/hicolor/512x512/apps/io.github.HarbourMasters.Starship.png
-    # The @...@ placeholders are filled in by prepare.sh (run it before building)
     sources:
       - type: git
         url: https://github.com/HarbourMasters/Starship.git
@@ -55,7 +124,10 @@ modules:
         commands:
           - export SHIP_HOME="${XDG_DATA_HOME}/starship"
           - mkdir -p "$SHIP_HOME"
-          - cd /app/starship
-          - exec ./Starship "$@"
+          - cd "$SHIP_HOME"
+          # Torch reads config.yml and assets/ from the working directory
+          - ln -sfn /app/starship/config.yml "$SHIP_HOME/config.yml"
+          - ln -sfn /app/starship/assets "$SHIP_HOME/assets"
+          - exec /app/starship/Starship "$@"
       - type: file
         path: io.github.HarbourMasters.Starship.desktop

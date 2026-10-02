@@ -28,6 +28,21 @@ GCDB_URL="https://raw.githubusercontent.com/mdqinc/SDL_GameControllerDB/5a12daa5
 curl -fsSL "$GCDB_URL" -o "$WORK/gcdb.txt"
 GCDB_SHA=$(sha256sum "$WORK/gcdb.txt" | cut -d' ' -f1)
 
+# Build dependencies not shipped in the Freedesktop SDK (URL + checksum filled in below)
+declare -A DEPS=(
+  [LIBZIP]="https://github.com/nih-at/libzip/releases/download/v1.11.3/libzip-1.11.3.tar.xz"
+  [TINYXML2]="https://github.com/leethomason/tinyxml2/archive/refs/tags/10.0.0.tar.gz"
+  [SPDLOG]="https://github.com/gabime/spdlog/archive/refs/tags/v1.15.3.tar.gz"
+  [JSON]="https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz"
+  [SDLNET]="https://github.com/libsdl-org/SDL_net/releases/download/release-2.2.0/SDL2_net-2.2.0.tar.gz"
+  [GLEW]="https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.tgz"
+)
+for k in "${!DEPS[@]}"; do
+  curl -fsSL "${DEPS[$k]}" -o "$WORK/$k.dl" || { echo "Download failed for $k: ${DEPS[$k]}" >&2; exit 1; }
+  sha=$(sha256sum "$WORK/$k.dl" | cut -d' ' -f1)
+  sed -i -e "s|@${k}_URL@|${DEPS[$k]}|" -e "s|@${k}_SHA@|$sha|" "$MANIFEST"
+done
+
 sed -i \
   -e "s|@STARSHIP_COMMIT@|$STARSHIP|" \
   -e "s|@TORCH_COMMIT@|$TORCH|" \
