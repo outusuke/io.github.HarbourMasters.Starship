@@ -17,29 +17,45 @@ modules:
     buildsystem: simple
     build-options:
       build-args:
-        - --share=network   # CMake FetchContent (libultraship/Torch deps) needs network
+        - --share=network   # CMake FetchContent (imgui, stb, dr_libs, ...) needs network
     build-commands:
       - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake --build build --target GeneratePortO2R
       - cmake --build build -j"$FLATPAK_BUILDER_N_JOBS"
       - install -Dm755 "$(find build -maxdepth 2 -type f -iname starship -perm -u+x | head -n1)" /app/starship/Starship
       - find build -maxdepth 2 -name '*.o2r' -exec install -Dm644 -t /app/starship {} +
       - install -Dm644 config.yml /app/starship/config.yml
       - cp -r yamls /app/starship/yamls
       - cp -r assets /app/starship/assets
+      - install -Dm644 gamecontrollerdb.txt /app/starship/gamecontrollerdb.txt
       - install -Dm755 starship.sh /app/bin/starship.sh
       - install -Dm644 io.github.HarbourMasters.Starship.desktop /app/share/applications/io.github.HarbourMasters.Starship.desktop
       - install -Dm644 logo.png /app/share/icons/hicolor/512x512/apps/io.github.HarbourMasters.Starship.png
+    # The @...@ placeholders are filled in by prepare.sh (run it before building)
     sources:
       - type: git
         url: https://github.com/HarbourMasters/Starship.git
-        branch: main
+        commit: '@STARSHIP_COMMIT@'
+        disable-submodules: true
+      - type: git
+        url: https://github.com/HarbourMasters/Torch.git
+        commit: '@TORCH_COMMIT@'
+        dest: tools/Torch
+      - type: archive
+        url: '@LUS_URL@'
+        sha256: '@LUS_SHA@'
+        strip-components: 1
+        dest: libultraship
+      - type: file
+        url: '@GCDB_URL@'
+        sha256: '@GCDB_SHA@'
+        dest-filename: gamecontrollerdb.txt
       - type: script
         dest-filename: starship.sh
         commands:
           - export SHIP_HOME="${XDG_DATA_HOME}/starship"
-          - export SHIP_BIN_DIR=/app/starship
           - mkdir -p "$SHIP_HOME"
-          - cd "$SHIP_HOME"
-          - exec /app/starship/Starship "$@"
+          - cd /app/starship
+          - exec ./Starship "$@"
       - type: file
         path: io.github.HarbourMasters.Starship.desktop
