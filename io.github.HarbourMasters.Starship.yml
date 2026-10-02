@@ -1,0 +1,45 @@
+app-id: io.github.HarbourMasters.Starship
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: starship.sh
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --device=all        # gamepads
+  - --share=network     # controller DB fetch
+  - --filesystem=xdg-documents:ro   # to pick your SF64 ROM
+modules:
+  - name: starship
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network   # CMake FetchContent (libultraship/Torch deps) needs network
+    build-commands:
+      - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake --build build -j"$FLATPAK_BUILDER_N_JOBS"
+      - install -Dm755 "$(find build -maxdepth 2 -type f -iname starship -perm -u+x | head -n1)" /app/starship/Starship
+      - find build -maxdepth 2 -name '*.o2r' -exec install -Dm644 -t /app/starship {} +
+      - install -Dm644 config.yml /app/starship/config.yml
+      - cp -r yamls /app/starship/yamls
+      - cp -r assets /app/starship/assets
+      - install -Dm755 starship.sh /app/bin/starship.sh
+      - install -Dm644 io.github.HarbourMasters.Starship.desktop /app/share/applications/io.github.HarbourMasters.Starship.desktop
+      - install -Dm644 logo.png /app/share/icons/hicolor/512x512/apps/io.github.HarbourMasters.Starship.png
+    sources:
+      - type: git
+        url: https://github.com/HarbourMasters/Starship.git
+        branch: main
+      - type: script
+        dest-filename: starship.sh
+        commands:
+          - export SHIP_HOME="${XDG_DATA_HOME}/starship"
+          - export SHIP_BIN_DIR=/app/starship
+          - mkdir -p "$SHIP_HOME"
+          - cd "$SHIP_HOME"
+          - exec /app/starship/Starship "$@"
+      - type: file
+        path: io.github.HarbourMasters.Starship.desktop
