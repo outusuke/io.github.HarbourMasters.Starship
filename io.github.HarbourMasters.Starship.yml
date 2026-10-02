@@ -67,6 +67,7 @@ modules:
 
   - name: SDL2_net
     buildsystem: cmake-ninja
+    builddir: true   # SDL_net refuses in-tree builds
     config-opts:
       - -DSDL2NET_SAMPLES=OFF
     sources:
