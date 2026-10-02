@@ -80,6 +80,7 @@ modules:
     subdir: build/cmake
     config-opts:
       - -DBUILD_UTILS=OFF
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5   # GLEW 2.2.0 predates CMake 4
     sources:
       - type: archive
         url: '@GLEW_URL@'
@@ -91,7 +92,7 @@ modules:
       build-args:
         - --share=network   # CMake FetchContent (imgui, stb, dr_libs, StormLib, ...) needs network
     build-commands:
-      - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app -DCMAKE_PREFIX_PATH=/app -DBUILD_SHARED_LIBS=OFF
+      - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app -DCMAKE_PREFIX_PATH=/app -DBUILD_SHARED_LIBS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - cmake --build build --target GeneratePortO2R
       - cmake --build build -j"$FLATPAK_BUILDER_N_JOBS"
       - install -Dm755 "$(find build -maxdepth 2 -type f -iname starship -perm -u+x | head -n1)" /app/starship/Starship
