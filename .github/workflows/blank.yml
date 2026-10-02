@@ -17,7 +17,7 @@ jobs:
       - name: Resolve Starship sources
         run: |
           bash prepare.sh io.github.HarbourMasters.Starship.yml
-          if grep -nE '@[A-Z_]+@' io.github.HarbourMasters.Starship.yml; then
+          if grep -nE '@[A-Z0-9_]+@' io.github.HarbourMasters.Starship.yml; then
             echo "Unresolved placeholders in manifest" >&2; exit 1
           fi
           grep -nE 'commit:|url:|sha256:' io.github.HarbourMasters.Starship.yml
